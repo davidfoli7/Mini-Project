@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Buddy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4F46E5',
+                        secondary: '#6366F1',
+                        accent: '#F472B6'
+                    },
+                    fontFamily: {
+                        poppins: ['Poppins', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+        .mode-btn.active {
+            background-color: #4F46E5;
+        }
+        #chatContainer {
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #CBD5E1 transparent;
+        }
+        #chatContainer::-webkit-scrollbar {
+            width: 6px;
+        }
+        #chatContainer::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        #chatContainer::-webkit-scrollbar-thumb {
+            background-color: #CBD5E1;
+            border-radius: 3px;
+        }
+        .message-content pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .flashcard-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+            padding: 2rem;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .flashcard-controls {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            margin-bottom: 1rem;
+            width: 100%;
+        }
+        .flashcard-progress {
+            flex: 1;
+            height: 4px;
+            background: #E5E7EB;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #4F46E5;
+            transition: width 0.3s ease;
+        }
+        .flashcard-counter {
+            font-size: 0.875rem;
+            color: #6B7280;
+            font-weight: 500;
+        }
+        .flashcard {
+            perspective: 1000px;
+            width: 100%;
+            min-width: 300px;
+            max-width: 1000px;
+            height: 400px;
+            cursor: pointer;
+            position: relative;
+            margin: 0 auto;
+        }
+        .flashcard-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .flashcard.flipped .flashcard-inner {
+            transform: rotateY(180deg);
+        }
+        .flashcard-front, .flashcard-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            background: white;
+            overflow: auto;
+        }
+        .flashcard-front {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border: 2px solid #E5E7EB;
+        }
+        .flashcard-back {
+            background: linear-gradient(135deg, #4F46E5 0%, #4338CA 100%);
+            color: white;
+            transform: rotateY(180deg);
+        }
+        .flashcard-content {
+            width: 100%;
+            max-width: 95%;
+            font-size: 1.1rem;
+            line-height: 1.4;
+            font-weight: 500;
+            text-align: center;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            hyphens: auto;
+            margin: auto;
+            padding: 0.5rem;
+            color: #1F2937;
+            flex: 1;
+            overflow-y: auto;
+        }
+        .flashcard-content::-webkit-scrollbar {
+            width: 4px;
+        }
+        .flashcard-content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .flashcard-content::-webkit-scrollbar-thumb {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 2px;
+        }
+        .flashcard-hint {
+            position: sticky;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            font-size: 0.875rem;
+            color: #9CA3AF;
+            opacity: 0.8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            background: inherit;
+            margin-top: 0.5rem;
+            z-index: 10;
+        }
+        .flashcard-back .flashcard-hint {
+            color: rgba(255, 255, 255, 0.8);
+        }
+        .flashcard-navigation {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 2rem;
+            width: 100%;
+        }
+        .nav-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 3rem;
+            height: 3rem;
+            border-radius: 50%;
+            background: white;
+            border: 2px solid #E5E7EB;
+            color: #4F46E5;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .nav-button:hover {
+            background: #4F46E5;
+            color: white;
+            border-color: #4F46E5;
+            transform: translateY(-2px);
+        }
+        .nav-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        .nav-button i {
+            font-size: 1.25rem;
+        }
+        @media (max-width: 768px) {
+            .flashcard {
+                height: 350px;
+                min-width: 250px;
+            }
+            .flashcard-content {
+                font-size: 1rem;
+                padding: 0.25rem;
+            }
+        }
+        @media (max-width: 480px) {
+            .flashcard {
+                height: 300px;
+                min-width: 200px;
+            }
+            .flashcard-content {
+                font-size: 0.9rem;
+                padding: 0.25rem;
+            }
+        }
+        .mcq-container {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            padding: 1.5rem;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .mcq-card {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 2rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        .mcq-card.correct {
+            background-color: #ECFDF5 !important;
+            border: 2px solid #059669 !important;
+        }
+        .mcq-card.incorrect {
+            background-color: #FEF2F2 !important;
+            border: 2px solid #DC2626 !important;
+        }
+        .mcq-options {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+        .mcq-option {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            border: 1px solid #E5E7EB;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+            background-color: white;
+        }
+        .mcq-option:hover {
+            background-color: #F3F4F6;
+        }
+        .mcq-option input[type="radio"] {
+            width: 1.25rem;
+            height: 1.25rem;
+            margin: 0;
+            cursor: pointer;
+        }
+        .mcq-option label {
+            flex: 1;
+            cursor: pointer;
+            font-size: 1.1rem;
+        }
+        .mcq-card.correct .show-answer {
+            background-color: #D1FAE5 !important;
+            border: 1px solid #059669 !important;
+            color: #059669 !important;
+        }
+        .mcq-card.incorrect .show-answer {
+            background-color: #FEE2E2 !important;
+            border: 1px solid #DC2626 !important;
+            color: #DC2626 !important;
+        }
+        .show-answer {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background-color: #F3F4F6;
+            border-radius: 0.5rem;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            display: none;
+        }
+        .show-answer.visible {
+            display: block;
+        }
+        .answer-text {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        textarea:focus {
+            outline: none !important;
+            box-shadow: none !important;
+            border: none !important;
+        }
+        
+        .flex-1 {
+            border: none !important;
+            outline: none !important;
+        }
+    </style>
+</head>
+<body class="font-poppins bg-gray-100">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside class="w-72 bg-gray-900 fixed h-full flex flex-col">
+            <div class="flex items-center gap-3 p-6 text-white">
+                <img src="/static/images/logo.png" alt="Study Buddy Logo" class="w-16 h-16">
+                <span class="text-xl font-semibold text-white">Study Buddy</span>
+            </div>
+            
+            <nav class="flex flex-col gap-2 p-4">
+                <button class="mode-btn active flex items-center gap-3 p-3 rounded-lg text-white hover:bg-gray-800 transition-all" data-mode="general">
+                    <i class="fas fa-comments w-5"></i>
+                    General Q&A
+                </button>
+                <button class="mode-btn flex items-center gap-3 p-3 rounded-lg text-white hover:bg-gray-800 transition-all" data-mode="flashcards">
+                    <i class="fas fa-layer-group w-5"></i>
+                    Flashcards
+                </button>
+                <button class="mode-btn flex items-center gap-3 p-3 rounded-lg text-white hover:bg-gray-800 transition-all" data-mode="mcq">
+                    <i class="fas fa-tasks w-5"></i>
+                    Multiple Choice
+                </button>
+                <button class="mode-btn flex items-center gap-3 p-3 rounded-lg text-white hover:bg-gray-800 transition-all" data-mode="casestudies">
+                    <i class="fas fa-book w-5"></i>
+                    Case Studies
+                </button>
+                <button class="mode-btn flex items-center gap-3 p-3 rounded-lg text-white hover:bg-gray-800 transition-all" data-mode="summarize">
+                    <i class="fas fa-file-alt w-5"></i>
+                    Summarization
+                </button>
+            </nav>
+
+            <div class="mt-auto mx-4 mb-6 p-6 bg-gray-800 rounded-xl text-white">
+                <h3 class="text-lg font-medium mb-4">Your Progress</h3>
+                <div class="space-y-4">
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-check-circle text-indigo-400"></i>
+                        <span><span id="completedValue">0</span> Completed</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-star text-indigo-400"></i>
+                        <span><span id="scoreValue">0%</span> Score</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 ml-72">
+            <div class="p-8">
+                <div class="bg-white rounded-xl p-6 shadow-sm mb-8">
+                    <h2 class="text-2xl font-semibold text-primary mb-2 current-mode">General Q&A</h2>
+                    <p class="text-gray-600 mode-description">Ask any question and get detailed answers</p>
+                </div>
+
+                <div id="chatContainer" class="bg-white rounded-xl p-6 shadow-sm min-h-[calc(100vh-300px)] mb-24">
+                    <!-- Messages will be inserted here -->
+                </div>
+
+                <div class="fixed bottom-0 left-72 right-0 p-6 bg-white border-t border-gray-200">
+                    <div class="max-w-6xl mx-auto">
+                        <div class="flex items-center gap-4 p-3 bg-gray-200 border-2 border-gray-200 rounded-xl focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10">
+                            <div id="configPanel" class="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-gray-200">
+                                <button id="decreaseBtn" class="w-6 h-6 flex items-center justify-center rounded text-gray-600 hover:bg-primary hover:text-white transition-all">
+                                    <i class="fas fa-minus text-xs"></i>
+                                </button>
+                                <div class="flex items-center gap-1">
+                                    <input type="number" id="numItems" value="5" min="1" max="20" class="w-10 text-center text-primary font-medium focus:outline-none">
+                                    <span class="text-sm text-gray-600">items</span>
+                                </div>
+                                <button id="increaseBtn" class="w-6 h-6 flex items-center justify-center rounded text-gray-600 hover:bg-primary hover:text-white transition-all">
+                                    <i class="fas fa-plus text-xs"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="flex-1">
+                                <textarea 
+                                    id="userPrompt" 
+                                    class="w-full min-h-[44px] max-h-[150px] bg-transparent border-0 focus:ring-0 focus:outline-none resize-none"
+                                    placeholder="Type your message or use voice input..."
+                                    rows="1"
+                                    maxlength="2000"
+                                ></textarea>
+                            </div>
+                            
+                            <div class="flex items-center gap-2">
+                                <button id="voiceBtn" class="w-9 h-9 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-200 transition-all">
+                                    <i class="fas fa-microphone"></i>
+                                </button>
+                                <button id="clearBtn" class="w-9 h-9 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-200 transition-all">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                <button id="sendBtn" class="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all">
+                                    <i class="fas fa-paper-plane"></i>
+                                    <span>Send</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        // Inline JavaScript
+        let currentMode = 'general';
+        let isProcessing = false;
+        const stats = { completed: 0, score: 0 };
+
+        // Add chat storage functionality
+        const chatHistory = {
+            general: [],
+            flashcards: [],
+            mcq: [],
+            casestudies: [],
+            summarize: []
+        };
+
+        // Function to save chat history to cookies
+        function saveChatHistory() {
+            const expiryDate = new Date();
+            expiryDate.setDate(expiryDate.getDate() + 1); // Cookie expires in 1 day
+            document.cookie = `chatHistory=${JSON.stringify(chatHistory)};expires=${expiryDate.toUTCString()};path=/`;
+        }
+
+        // Function to load chat history from cookies
+        function loadChatHistory() {
+            const cookies = document.cookie.split(';');
+            const chatCookie = cookies.find(cookie => cookie.trim().startsWith('chatHistory='));
+            if (chatCookie) {
+                const savedHistory = JSON.parse(chatCookie.split('=')[1]);
+                Object.assign(chatHistory, savedHistory);
+                // Display current mode's chat history
+                displayChatHistory(currentMode);
+            }
+        }
+
+        // Function to display chat history for a specific mode
+        function displayChatHistory(mode) {
+            chatContainer.innerHTML = '';
+            chatHistory[mode].forEach(msg => {
+                appendMessage(msg.content, msg.isUser, false);
+            });
+        }
+
+        // DOM Elements
+        const userPrompt = document.getElementById('userPrompt');
+        const sendBtn = document.getElementById('sendBtn');
+        const voiceBtn = document.getElementById('voiceBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const chatContainer = document.getElementById('chatContainer');
+        const configPanel = document.getElementById('configPanel');
+        const numItemsInput = document.getElementById('numItems');
+        const increaseBtn = document.getElementById('increaseBtn');
+        const decreaseBtn = document.getElementById('decreaseBtn');
+        const modeButtons = document.querySelectorAll('.mode-btn');
+
+        // Functions
+        function getPlaceholder(mode) {
+            const placeholders = {
+                general: 'Ask any question...',
+                flashcards: 'Enter a topic for flashcards...',
+                mcq: 'Enter a topic for multiple choice questions...',
+                casestudies: 'Enter a topic for case study analysis...',
+                summarize: 'Enter text to summarize...'
+            };
+            return placeholders[mode] || 'Type your message...';
+        }
+
+        function switchMode(mode) {
+            modeButtons.forEach(btn => {
+                btn.classList.remove('active', 'bg-primary');
+                if (btn.dataset.mode === mode) {
+                    btn.classList.add('active', 'bg-primary');
+                }
+            });
+            
+            currentMode = mode;
+            
+            const descriptions = {
+                general: 'Ask any question and get detailed answers',
+                flashcards: 'Practice with interactive flashcards',
+                mcq: 'Test your knowledge with multiple choice questions',
+                casestudies: 'Learn from real-world case studies',
+                summarize: 'Get concise summaries of long texts'
+            };
+            
+            document.querySelector('.current-mode').textContent = mode.charAt(0).toUpperCase() + mode.slice(1);
+            document.querySelector('.mode-description').textContent = descriptions[mode] || '';
+            
+            configPanel.style.display = mode === 'general' || mode === 'summarize' ? 'none' : 'flex';
+            userPrompt.placeholder = getPlaceholder(mode);
+
+            // Display chat history for the selected mode
+            displayChatHistory(mode);
+        }
+
+        function appendMessage(content, isUser = false, shouldSave = true) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`;
+            
+            const messageContent = document.createElement('div');
+            messageContent.className = `max-w-[70%] p-4 rounded-2xl ${
+                isUser 
+                    ? 'bg-primary text-white rounded-br-none' 
+                    : 'bg-gray-50 text-gray-900 rounded-bl-none'
+            }`;
+
+            if (currentMode === 'flashcards' && !isUser) {
+                appendFlashcards(content);
+            } else if (currentMode === 'mcq' && !isUser) {
+                const mcqContainer = document.createElement('div');
+                mcqContainer.className = 'mcq-container';
+                
+                const questionRegex = /Question \d+:\n(.*?)\n((?:[a-d]\) .*?\n)+)Correct Answer: (.*?)\nExplanation: (.*?)(?=Question \d+:|$)/gs;
+                let match;
+                
+                while ((match = questionRegex.exec(content)) !== null) {
+                    const [_, question, options, correctAnswer, explanation] = match;
+                    
+                    const mcqCard = document.createElement('div');
+                    mcqCard.className = 'mcq-card';
+                    
+                    const questionDiv = document.createElement('div');
+                    questionDiv.className = 'font-medium text-xl mb-4';
+                    questionDiv.textContent = question.trim();
+                    
+                    const optionsDiv = document.createElement('div');
+                    optionsDiv.className = 'mcq-options';
+                    
+                    options.split('\n').filter(opt => opt.trim()).forEach(option => {
+                        const optionDiv = document.createElement('div');
+                        optionDiv.className = 'mcq-option';
+                        
+                        const radio = document.createElement('input');
+                        radio.type = 'radio';
+                        radio.name = `question-${mcqContainer.children.length}`;
+                        radio.value = option[0];
+                        radio.id = `${radio.name}-${option[0]}`;
+                        
+                        const label = document.createElement('label');
+                        label.htmlFor = radio.id;
+                        label.textContent = option.slice(3).trim();
+                        
+                        optionDiv.appendChild(radio);
+                        optionDiv.appendChild(label);
+                        
+                        // Add click event to the entire option div
+                        optionDiv.addEventListener('click', () => {
+                            radio.checked = true;
+                            const showAnswer = mcqCard.querySelector('.show-answer');
+                            
+                            const selectedAnswer = radio.value;
+                            const correctAnswerLetter = correctAnswer.trim().toLowerCase();
+                            
+                            if (selectedAnswer.toLowerCase() === correctAnswerLetter) {
+                                mcqCard.classList.remove('incorrect');
+                                mcqCard.classList.add('correct');
+                                mcqCard.style.backgroundColor = '#ECFDF5';
+                                mcqCard.style.borderColor = '#059669';
+                                optionDiv.style.backgroundColor = '#D1FAE5';
+                                optionDiv.style.borderColor = '#059669';
+                                optionDiv.style.color = '#059669';
+                                showAnswer.style.backgroundColor = '#D1FAE5';
+                                showAnswer.style.borderColor = '#059669';
+                                showAnswer.style.color = '#059669';
+                                showAnswer.querySelector('.answer-text').style.color = '#059669';
+                                showAnswer.querySelector('.explanation').style.color = '#059669';
+                                stats.score = Math.min(100, stats.score + 5);
+                            } else {
+                                mcqCard.classList.remove('correct');
+                                mcqCard.classList.add('incorrect');
+                                mcqCard.style.backgroundColor = '#FEF2F2';
+                                mcqCard.style.borderColor = '#DC2626';
+                                optionDiv.style.backgroundColor = '#FEE2E2';
+                                optionDiv.style.borderColor = '#DC2626';
+                                optionDiv.style.color = '#DC2626';
+                                showAnswer.style.backgroundColor = '#FEE2E2';
+                                showAnswer.style.borderColor = '#DC2626';
+                                showAnswer.style.color = '#DC2626';
+                                showAnswer.querySelector('.answer-text').style.color = '#DC2626';
+                                showAnswer.querySelector('.explanation').style.color = '#DC2626';
+                                
+                                // Highlight the correct answer in green
+                                optionsDiv.querySelectorAll('.mcq-option').forEach(opt => {
+                                    if (opt.querySelector('input').value.toLowerCase() === correctAnswerLetter) {
+                                        opt.style.backgroundColor = '#D1FAE5';
+                                        opt.style.borderColor = '#059669';
+                                        opt.style.color = '#059669';
+                                    }
+                                });
+                            }
+                            
+                            showAnswer.classList.add('visible');
+                            
+                            // Disable all options after selection
+                            optionsDiv.querySelectorAll('.mcq-option').forEach(opt => {
+                                opt.style.pointerEvents = 'none';
+                            });
+                            
+                            updateStats();
+                        });
+                        
+                        optionsDiv.appendChild(optionDiv);
+                    });
+                    
+                    const showAnswer = document.createElement('div');
+                    showAnswer.className = 'show-answer';
+                    showAnswer.innerHTML = `
+                        <div class="answer-text">Correct Answer: ${correctAnswer.trim()}</div>
+                        <div class="explanation">${explanation.trim()}</div>
+                    `;
+                    
+                    mcqCard.appendChild(questionDiv);
+                    mcqCard.appendChild(optionsDiv);
+                    mcqCard.appendChild(showAnswer);
+                    mcqContainer.appendChild(mcqCard);
+                }
+                
+                messageContent.appendChild(mcqContainer);
+            } else {
+                if (content.includes('\n')) {
+                    // Format paragraphs and handle bold text
+                    messageContent.innerHTML = content.split('\n').map(line => {
+                        // Handle section headers
+                        line = line.replace(/^(Question \d+:|Card \d+:|Background:|Analysis:|Conclusion:|Recommendations:)/g, '<strong class="text-lg block mb-2">$1</strong>');
+                        
+                        // Handle bold text (text between ** **)
+                        line = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                        
+                        // Handle bullet points
+                        line = line.replace(/^- (.*)/gm, '<li class="ml-4">• $1</li>');
+                        
+                        // Handle numbered lists
+                        line = line.replace(/^\d+\. (.*)/gm, '<li class="ml-4 list-decimal">$1</li>');
+                        
+                        return line;
+                    }).join('<br>');
+
+                    // Wrap lists in ul/ol tags
+                    messageContent.innerHTML = messageContent.innerHTML
+                        .replace(/<li class="ml-4">(?:(?!<\/li>[\s\S]*?<li class="ml-4">)[\s\S])*?<\/li>/g, match => `<ul class="my-2">${match}</ul>`)
+                        .replace(/<li class="ml-4 list-decimal">(?:(?!<\/li>[\s\S]*?<li class="ml-4 list-decimal">)[\s\S])*?<\/li>/g, match => `<ol class="my-2">${match}</ol>`);
+
+                    // Add spacing between paragraphs
+                    messageContent.innerHTML = messageContent.innerHTML
+                        .replace(/<br><br>/g, '</p><p class="my-4">')
+                        .replace(/^(.+?)(?=<br|$)/g, '<p>$1</p>');
+                } else {
+                    // Handle single line with bold text
+                    messageContent.innerHTML = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                }
+
+                // Add general styling to the message content
+                messageContent.classList.add('prose', 'prose-sm', 'max-w-none');
+                messageContent.style.lineHeight = '1.6';
+            }
+            
+            messageDiv.appendChild(messageContent);
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+
+            // Save message to history if needed
+            if (shouldSave) {
+                chatHistory[currentMode].push({ content, isUser });
+                saveChatHistory();
+            }
+        }
+
+        async function handleSend() {
+            if (isProcessing || !userPrompt.value.trim()) return;
+            
+            const message = userPrompt.value.trim();
+            const numItems = parseInt(numItemsInput.value) || 5;
+            
+            appendMessage(message, true);
+            
+            isProcessing = true;
+            sendBtn.disabled = true;
+            userPrompt.value = '';
+            adjustTextareaHeight();
+            
+            const GEMINI_API_KEY = 'AIzaSyC577o5gno9WpKQJcSUsDqaBLmQnl2k_U4';
+            const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+            
+            try {
+                // Prepare prompt based on mode
+                let prompt = '';
+                switch(currentMode) {
+                    case 'flashcards':
+                        prompt = `Create ${numItems} flashcards about "${message}". Format each card exactly as follows:
+
+Card 1:
+Front: [Question or Concept]
+Back: [Answer or Explanation]
+
+Card 2:
+Front: [Question or Concept]
+Back: [Answer or Explanation]
+
+Continue this format for all ${numItems} cards. Each card should be clearly separated with a blank line between them.`;
+                        break;
+                    case 'mcq':
+                        prompt = `Create ${numItems} multiple choice questions about "${message}". Format each question exactly as follows:
+
+Question 1:
+[Your question here]
+a) First option
+b) Second option
+c) Third option
+d) Fourth option
+Correct Answer: [letter]
+Explanation: [Why this is correct]
+
+Question 2:
+[Your question here]
+a) First option
+b) Second option
+c) Third option
+d) Fourth option
+Correct Answer: [letter]
+Explanation: [Why this is correct]
+
+Continue this format for all ${numItems} questions. Each question should be clearly separated with a blank line between them.`;
+                        break;
+                    case 'casestudies':
+                        prompt = `Create a detailed case study about "${message}". Format it exactly as follows:
+
+Background:
+[Provide context and situation]
+
+Analysis:
+[Detailed analysis of the case]
+
+Conclusion:
+[Key findings and outcomes]
+
+Recommendations:
+[Suggested actions and solutions]
+
+Make sure each section is clearly separated with a blank line between them.`;
+                        break;
+                    case 'summarize':
+                        prompt = `Provide a comprehensive summary of "${message}". Format it exactly as follows:
+
+Key Points:
+- First key point
+- Second key point
+- Third key point
+
+Main Takeaways:
+- First takeaway
+- Second takeaway
+- Third takeaway
+
+Make sure each section is clearly separated with a blank line between them.`;
+                        break;
+                    default:
+                        prompt = `Provide a detailed explanation about "${message}". Format it with clear sections and bullet points where appropriate.`;
+                }
+
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: prompt
+                            }]
+                        }]
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error?.message || 'Network response was not ok');
+                }
+
+                if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
+                    const generatedText = data.candidates[0].content.parts[0].text;
+                    appendMessage(generatedText);
+                    stats.completed++;
+                    stats.score = Math.min(100, stats.score + 5);
+                    updateStats();
+                } else {
+                    throw new Error('Invalid response format from API');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                appendMessage('Error: ' + (error.message || 'There was an error processing your request. Please try again.'));
+            } finally {
+                isProcessing = false;
+                sendBtn.disabled = false;
+            }
+        }
+
+        function clearChat() {
+            chatContainer.innerHTML = '';
+            chatHistory[currentMode] = [];
+            saveChatHistory();
+        }
+
+        function updateStats() {
+            document.getElementById('completedValue').textContent = stats.completed;
+            document.getElementById('scoreValue').textContent = stats.score + '%';
+        }
+
+        function adjustTextareaHeight() {
+            userPrompt.style.height = 'auto';
+            userPrompt.style.height = (userPrompt.scrollHeight) + 'px';
+        }
+
+        function updateNumItems(change) {
+            const currentValue = parseInt(numItemsInput.value);
+            const newValue = Math.max(1, Math.min(20, currentValue + change));
+            numItemsInput.value = newValue;
+            
+            const btn = change > 0 ? increaseBtn : decreaseBtn;
+            btn.classList.add('bg-primary', 'text-white');
+            setTimeout(() => {
+                btn.classList.remove('bg-primary', 'text-white');
+            }, 200);
+        }
+
+        // Event Listeners
+        modeButtons.forEach(btn => {
+            btn.addEventListener('click', () => switchMode(btn.dataset.mode));
+        });
+
+        sendBtn.addEventListener('click', handleSend);
+        clearBtn.addEventListener('click', clearChat);
+        
+        userPrompt.addEventListener('input', adjustTextareaHeight);
+        userPrompt.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+            }
+        });
+
+        increaseBtn.addEventListener('click', () => updateNumItems(1));
+        decreaseBtn.addEventListener('click', () => updateNumItems(-1));
+        
+        // Voice Input
+        voiceBtn.addEventListener('click', () => {
+            if ('webkitSpeechRecognition' in window) {
+                const recognition = new webkitSpeechRecognition();
+                recognition.continuous = false;
+                recognition.interimResults = false;
+                
+                recognition.onstart = () => {
+                    voiceBtn.classList.add('bg-gray-200');
+                };
+                
+                recognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript;
+                    userPrompt.value = transcript;
+                    adjustTextareaHeight();
+                };
+                
+                recognition.onend = () => {
+                    voiceBtn.classList.remove('bg-gray-200');
+                };
+                
+                recognition.start();
+            } else {
+                appendMessage('Voice input is not supported in your browser.');
+            }
+        });
+
+        // Initialize
+        adjustTextareaHeight();
+        updateStats();
+
+        // Update the appendMessage function for flashcards
+        function appendFlashcards(content) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'flex justify-start mb-4';
+            
+            const messageContent = document.createElement('div');
+            messageContent.className = 'max-w-[90%] p-4 rounded-2xl bg-gray-50 text-gray-900 rounded-bl-none';
+            
+            const flashcardContainer = document.createElement('div');
+            flashcardContainer.className = 'flashcard-container';
+            
+            // Parse cards
+            const cardRegex = /Card \d+:\nFront: (.*?)\nBack: (.*?)(?=Card \d+:|$)/gs;
+            const cards = [];
+            let match;
+            
+            while ((match = cardRegex.exec(content)) !== null) {
+                cards.push({
+                    front: match[1].trim(),
+                    back: match[2].trim()
+                });
+            }
+            
+            let currentCardIndex = 0;
+            
+            // Create controls
+            const controls = document.createElement('div');
+            controls.className = 'flashcard-controls';
+            
+            const progress = document.createElement('div');
+            progress.className = 'flashcard-progress';
+            const progressFill = document.createElement('div');
+            progressFill.className = 'progress-fill';
+            progress.appendChild(progressFill);
+            
+            const counter = document.createElement('div');
+            counter.className = 'flashcard-counter';
+            
+            controls.appendChild(progress);
+            controls.appendChild(counter);
+            
+            // Create flashcard
+            const flashcard = document.createElement('div');
+            flashcard.className = 'flashcard';
+            
+            const flashcardInner = document.createElement('div');
+            flashcardInner.className = 'flashcard-inner';
+            
+            const frontDiv = document.createElement('div');
+            frontDiv.className = 'flashcard-front';
+            
+            const backDiv = document.createElement('div');
+            backDiv.className = 'flashcard-back';
+            
+            flashcardInner.appendChild(frontDiv);
+            flashcardInner.appendChild(backDiv);
+            flashcard.appendChild(flashcardInner);
+            
+            // Create navigation
+            const navigation = document.createElement('div');
+            navigation.className = 'flashcard-navigation';
+            
+            const prevBtn = document.createElement('button');
+            prevBtn.className = 'nav-button';
+            prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+            
+            const nextBtn = document.createElement('button');
+            nextBtn.className = 'nav-button';
+            nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+            
+            navigation.appendChild(prevBtn);
+            navigation.appendChild(nextBtn);
+            
+            // Update card content
+            function updateCard() {
+                const card = cards[currentCardIndex];
+                const contentLength = card.front.length + card.back.length;
+                
+                // Dynamically adjust font size based on content length
+                let fontSize = '1.1rem';
+                if (contentLength > 200) {
+                    fontSize = '1rem';
+                }
+                if (contentLength > 400) {
+                    fontSize = '0.9rem';
+                }
+                
+                frontDiv.innerHTML = `
+                    <div class="flashcard-content" style="font-size: ${fontSize}">${card.front}</div>
+                    <div class="flashcard-hint">
+                        <i class="fas fa-sync"></i>
+                        Click to flip
+                    </div>
+                `;
+                
+                backDiv.innerHTML = `
+                    <div class="flashcard-content" style="font-size: ${fontSize}">${card.back}</div>
+                    <div class="flashcard-hint">
+                        <i class="fas fa-sync"></i>
+                        Click to flip back
+                    </div>
+                `;
+                
+                counter.textContent = `${currentCardIndex + 1} / ${cards.length}`;
+                progressFill.style.width = `${((currentCardIndex + 1) / cards.length) * 100}%`;
+                
+                prevBtn.disabled = currentCardIndex === 0;
+                nextBtn.disabled = currentCardIndex === cards.length - 1;
+                
+                flashcard.classList.remove('flipped');
+            }
+            
+            // Event listeners
+            flashcard.addEventListener('click', () => {
+                flashcard.classList.toggle('flipped');
+            });
+            
+            prevBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (currentCardIndex > 0) {
+                    currentCardIndex--;
+                    updateCard();
+                }
+            });
+            
+            nextBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (currentCardIndex < cards.length - 1) {
+                    currentCardIndex++;
+                    updateCard();
+                }
+            });
+            
+            // Initial render
+            updateCard();
+            
+            flashcardContainer.appendChild(controls);
+            flashcardContainer.appendChild(flashcard);
+            flashcardContainer.appendChild(navigation);
+            
+            messageContent.appendChild(flashcardContainer);
+            messageDiv.appendChild(messageContent);
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // Load chat history when page loads
+        document.addEventListener('DOMContentLoaded', loadChatHistory);
+    </script>
+</body>
+</html>

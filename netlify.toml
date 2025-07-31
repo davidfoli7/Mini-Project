@@ -1,0 +1,19 @@
+[build]
+  command = "python app.py"
+  publish = "backend/templates"
+
+[build.environment]
+  PYTHON_VERSION = "3.8"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[functions]
+  directory = "netlify/functions"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*" 

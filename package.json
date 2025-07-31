@@ -1,0 +1,12 @@
+{
+  "name": "ai-personalized-learning",
+  "version": "1.0.0",
+  "description": "A modern, interactive learning platform featuring multiple study modes including flashcards, multiple-choice questions, case studies, and text summarization.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["ai", "learning", "education", "flashcards", "personalized"],
+  "author": "",
+  "license": "MIT"
+}

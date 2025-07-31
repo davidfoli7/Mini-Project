@@ -1,0 +1,43 @@
+# Ignore Python-related files
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+venv/
+env/
+*.env
+
+# Ignore Flask cache and logs
+instance/
+*.log
+*.sqlite3
+*.db
+
+# Ignore Node.js dependencies (if any frontend tools are used)
+node_modules/
+npm-debug.log
+yarn.lock
+
+# Ignore VS Code settings
+.vscode/
+
+# Ignore XAMPP and other local server logs (if applicable)
+xampp/
+logs/
+error_log
+
+# Ignore browser storage data
+*.localstorage
+*.ldb
+
+# Ignore build and temporary files
+dist/
+build/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Ignore API keys and credentials (if stored in a file)
+config.json
+secrets.json

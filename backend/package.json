@@ -1,0 +1,22 @@
+{
+  "name": "ai-personalized-learning-backend",
+  "version": "1.0.0",
+  "description": "Backend for AI Personalized Learning Platform",
+
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.1",
+    "cors": "^2.8.5",
+    "multer": "^1.4.3",
+    "node-fetch": "^2.6.1"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.12"
+  }
+}
